@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=5.0,user-scalable=yes,viewport-fit=cover">
+<title>2026年十大杰出港生 - 李昌伦</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+  background:#1a1a2e;display:flex;justify-content:center;align-items:center;
+  min-height:100dvh;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;
+}
+
+#app{
+  width:100%;max-width:500px;height:100dvh;
+  display:flex;flex-direction:column;position:relative;
+}
+
+#book-wrap{
+  flex:1;display:flex;flex-direction:column;position:relative;
+  margin:10px;border-radius:10px;overflow:hidden;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+
+#stage{
+  flex:1;position:relative;
+  perspective:2000px;
+  background:#f5f0eb;
+  touch-action:pan-y;
+  overflow:hidden;
+}
+
+/* ── All pages absolutely stacked ── */
+.book-page{
+  position:absolute;inset:0;
+  overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  visibility:hidden;z-index:1;
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  transform-origin:left center;
+  transition:transform .48s cubic-bezier(.33,0,.2,1),box-shadow .48s cubic-bezier(.33,0,.2,1);
+}
+
+.book-page.active  {visibility:visible;z-index:3}
+.book-page.under  {visibility:visible;z-index:2}
+.book-page.over   {visibility:visible;z-index:4}
+/* flipped = page rotated away to left */
+.book-page.flipped {transform:rotateY(-180deg);box-shadow:-25px 0 45px rgba(0,0,0,.35)}
+
+/* ── Cover Page ── */
+.cover-page{
+  background:linear-gradient(160deg,#1a1a2e 0%,#16213e 40%,#0f3460 100%);
+  color:#f0c040;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;text-align:center;
+  padding:48px 28px;min-height:100%;position:relative;overflow:hidden;
+}
+.cover-page::before{
+  content:'';position:absolute;top:-40%;right:-40%;
+  width:100%;height:100%;
+  background:radial-gradient(ellipse,rgba(240,192,64,.1) 0%,transparent 70%);
+}
+.cover-page::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:2px;background:linear-gradient(90deg,transparent,#f0c040,transparent);
+}
+.cover-star{
+  width:64px;height:64px;border:2px solid rgba(240,192,64,.4);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin-bottom:36px;position:relative;z-index:1;
+}
+.cover-star::before{content:'✦';font-size:26px;color:#f0c040}
+.cover-star::after{
+  content:'';position:absolute;inset:-8px;
+  border:1px solid rgba(240,192,64,.2);border-radius:50%;
+}
+.cover-title{
+  font-family:"STSong","Songti SC","SimSun","Noto Serif CJK SC",serif;
+  font-size:clamp(22px,7vw,30px);font-weight:700;
+  line-height:1.5;letter-spacing:3px;color:#f0c040;
+  text-shadow:0 2px 12px rgba(0,0,0,.4);z-index:1;margin-bottom:6px;
+}
+.cover-subtitle{
+  font-family:"STSong","Songti SC","SimSun","Noto Serif CJK SC",serif;
+  font-size:clamp(18px,5vw,22px);color:rgba(240,192,64,.85);
+  letter-spacing:6px;z-index:1;margin-bottom:28px;
+}
+.cover-line{
+  width:80px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(240,192,64,.5),transparent);
+  margin-bottom:28px;z-index:1;
+}
+.cover-info{font-size:14px;color:rgba(240,192,64,.55);letter-spacing:1px;z-index:1}
+.cover-badge{
+  display:inline-block;border:1px solid rgba(240,192,64,.35);
+  border-radius:4px;padding:6px 18px;font-size:13px;
+  color:rgba(240,192,64,.75);letter-spacing:2px;z-index:1;margin-top:10px;
+}
+
+/* ── Content Page ── */
+.content-page{
+  display:flex;flex-direction:column;
+  min-height:100%;background:#faf8f5;
+}
+.img-box{
+  flex-shrink:0;width:100%;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  background:#f0ebe3;cursor:pointer;
+  -webkit-tap-highlight-color:rgba(0,0,0,.05);
+  /* No max-height — let image display fully without cropping */
+}
+.img-box img{
+  display:block;width:100%;
+  object-fit:contain;       /* never crop */
+  transition:opacity .35s;
+}
+.img-box .zoom-hint{
+  position:absolute;bottom:10px;right:12px;
+  font-size:15px;opacity:.4;pointer-events:none;
+  background:rgba(0,0,0,.25);color:#fff;
+  border-radius:12px;padding:3px 10px;
+  font-size:12px;letter-spacing:.5px;
+}
+.text-box{
+  padding:18px 22px 12px;flex:1;
+}
+.text-box p{
+  font-size:15px;line-height:1.9;color:#3a3530;
+  letter-spacing:.5px;text-align:justify;
+}
+.page-num{
+  font-size:12px;color:#b8b0a4;text-align:center;
+  padding:6px 0 22px;letter-spacing:1px;
+}
+
+/* ── Shadow overlay during flip ── */
+#flip-shadow{
+  position:absolute;inset:0;pointer-events:none;z-index:5;
+  opacity:0;transition:opacity .15s;
+}
+#flip-shadow.active{
+  opacity:1;
+  background:linear-gradient(90deg,
+    rgba(0,0,0,.08) 0%,
+    rgba(0,0,0,.06) 40%,
+    transparent 60%);
+}
+
+/* ── Nav Bar ── */
+#nav-bar{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  padding:10px 16px;background:rgba(26,26,46,.95);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-radius:0 0 10px 10px;
+}
+.nav-btn{
+  width:38px;height:38px;border-radius:50%;
+  border:1px solid rgba(240,192,64,.3);
+  background:rgba(240,192,64,.08);
+  color:#f0c040;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;-webkit-tap-highlight-color:transparent;
+}
+.nav-btn:active{background:rgba(240,192,64,.25);transform:scale(.93)}
+.nav-btn:disabled{opacity:.25;pointer-events:none}
+#indicator{
+  color:rgba(240,192,64,.7);font-size:13px;
+  letter-spacing:1px;min-width:56px;text-align:center;
+}
+
+/* ── Hint ── */
+#hint{
+  position:absolute;bottom:90px;left:50%;transform:translateX(-50%);
+  color:rgba(0,0,0,.18);font-size:12px;letter-spacing:1px;
+  pointer-events:none;transition:opacity .8s;z-index:10;
+}
+
+/* ── Lightbox ── */
+#lightbox{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.95);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+  touch-action:auto;overflow:hidden;
+}
+#lightbox.on{opacity:1;pointer-events:auto}
+#lb-viewport{
+  width:100%;height:100%;display:flex;
+  align-items:center;justify-content:center;
+  overflow:hidden;
+}
+#lb-img{
+  max-width:95vw;max-height:90vh;object-fit:contain;
+  transition:transform .25s cubic-bezier(.25,.1,.25,1);
+  cursor:grab;user-select:none;-webkit-user-select:none;
+}
+#lb-img.zoomed{cursor:grab}
+#lb-img.dragging{cursor:grabbing;transition:none}
+.lb-close{
+  position:absolute;top:14px;right:14px;
+  width:40px;height:40px;border-radius:50%;
+  border:none;background:rgba(255,255,255,.18);
+  color:#fff;font-size:22px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;z-index:10;
+}
+#lb-controls{
+  position:absolute;bottom:24px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;
+  background:rgba(0,0,0,.6);border-radius:24px;
+  padding:6px 14px;z-index:10;
+}
+#lb-controls button{
+  width:32px;height:32px;border-radius:50%;
+  border:none;background:rgba(255,255,255,.15);
+  color:#fff;font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .2s;
+}
+#lb-controls button:hover{background:rgba(255,255,255,.3)}
+#lb-zoom-label{
+  color:rgba(255,255,255,.8);font-size:12px;
+  min-width:40px;text-align:center;
+}
+
+/* ── Responsive ── */
+@media(min-width:768px){#app{max-width:560px}.text-box p{font-size:16px}}
+@media(max-width:360px){.text-box p{font-size:14px;line-height:1.7}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="book-wrap">
+    <div id="stage"></div>
+    <div id="flip-shadow"></div>
+    <div id="hint">← 滑动翻页 →</div>
+    <div id="nav-bar">
+      <button class="nav-btn" id="btn-prev" disabled>◀</button>
+      <span id="indicator">1 / 8</span>
+      <button class="nav-btn" id="btn-next">▶</button>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox">
+  <div id="lb-viewport">
+    <img src="" alt="" id="lb-img" draggable="false">
+  </div>
+  <button class="lb-close">✕</button>
+  <div id="lb-controls">
+    <button id="lb-zoomin" title="放大">＋</button>
+    <span id="lb-zoom-label">100%</span>
+    <button id="lb-zoomout" title="缩小">－</button>
+    <button id="lb-reset" title="复原">↺</button>
+  </div>
+</div>
+
+<script>
+(function(){
+var DATA=[
+  {t:'cover'},
+  {t:'page',img:'images/page01.jpeg',txt:'「2026年大湾区十大杰出港生」评选结果正式揭晓。我校两位优秀学子——博士三年级学生李昌伦和本科三年级学生黄志杰，从众多优秀候选人中脱颖而出，分别斩获多项大奖，展现了我校学子的卓越风采与大湾区青年的责任担当。'},
+  {t:'page',img:'images/page02.jpeg',txt:'李昌伦同学荣获「十大杰出港生」称号以及「学术成就奖一等奖」'},
+  {t:'page',img:'images/page03.png',txt:'获奖奖杯'},
+  {t:'page',img:'images/page04.png',txt:'荣誉证书'},
+  {t:'page',img:'images/page05.png',txt:'奖杯和证书合照'},
+  {t:'page',img:'images/page06.png',txt:'香港大公报报道内容'},
+  {t:'page',img:'images/page07.png',txt:'香港文汇报报道内容'}
+];
+var N=DATA.length;
+var cur=0, busy=false;
+
+var stage=document.getElementById('stage');
+var indicator=document.getElementById('indicator');
+var btnPrev=document.getElementById('btn-prev');
+var btnNext=document.getElementById('btn-next');
+var hint=document.getElementById('hint');
+var flipShadow=document.getElementById('flip-shadow');
+var lightbox=document.getElementById('lightbox');
+var lbImg=document.getElementById('lb-img');
+var lbVp=document.getElementById('lb-viewport');
+var lbZoomLabel=document.getElementById('lb-zoom-label');
+var lbScale=1,lbPanX=0,lbPanY=0;
+var lbDragging=false,lbStart={},lbPanStart={};
+
+function openLightbox(src){
+  lbScale=1;lbPanX=0;lbPanY=0;
+  applyLbTransform(true);
+  lbImg.src=src;
+  lbZoomLabel.textContent='100%';
+  lightbox.classList.add('on');
+  document.body.style.overflow='hidden';
+}
+
+function closeLightbox(){
+  lightbox.classList.remove('on');
+  document.body.style.overflow='';
+  setTimeout(function(){lbImg.src=''},300);
+}
+
+function applyLbTransform(instant){
+  lbImg.style.transition=instant?'none':'transform .25s cubic-bezier(.25,.1,.25,1)';
+  lbImg.style.transform='translate('+lbPanX+'px,'+lbPanY+'px) scale('+lbScale+')';
+  if(lbScale>1.05){lbImg.classList.add('zoomed')}else{lbImg.classList.remove('zoomed')}
+  lbZoomLabel.textContent=Math.round(lbScale*100)+'%';
+}
+
+// Mouse wheel zoom
+lbVp.addEventListener('wheel',function(e){
+  if(!lightbox.classList.contains('on'))return;
+  e.preventDefault();
+  var rect=lbImg.getBoundingClientRect();
+  var mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  var oldS=lbScale;
+  var delta=e.deltaY>0?-0.15:0.15;
+  lbScale=Math.max(0.3,Math.min(6,lbScale+delta));
+  var ratio=lbScale/oldS;
+  lbPanX=mx-(mx-lbPanX)*ratio;
+  lbPanY=my-(my-lbPanY)*ratio;
+  applyLbTransform(false);
+},{passive:false});
+
+// Click image: toggle 1x / 2x
+lbImg.addEventListener('click',function(e){
+  if(lbDragging)return;
+  e.stopPropagation();
+  if(lbScale>1.1){lbScale=1;lbPanX=0;lbPanY=0}
+  else {lbScale=2;lbPanX=0;lbPanY=0}
+  applyLbTransform(false);
+});
+
+// Drag to pan (when zoomed)
+lbImg.addEventListener('mousedown',function(e){
+  if(lbScale<=1.05)return;
+  e.preventDefault();
+  lbDragging=true;
+  lbStart={x:e.clientX,y:e.clientY};
+  lbPanStart={x:lbPanX,y:lbPanY};
+  lbImg.classList.add('dragging');
+});
+
+window.addEventListener('mousemove',function(e){
+  if(!lbDragging)return;
+  lbPanX=lbPanStart.x+(e.clientX-lbStart.x);
+  lbPanY=lbPanStart.y+(e.clientY-lbStart.y);
+  applyLbTransform(true);
+});
+
+window.addEventListener('mouseup',function(){
+  if(!lbDragging)return;
+  lbDragging=false;
+  lbImg.classList.remove('dragging');
+});
+
+// Touch drag (mobile pan when zoomed)
+lbImg.addEventListener('touchstart',function(e){
+  if(lbScale<=1.05||e.touches.length!==1)return;
+  lbDragging=true;
+  lbStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  lbPanStart={x:lbPanX,y:lbPanY};
+  lbImg.classList.add('dragging');
+},{passive:false});
+
+lbImg.addEventListener('touchmove',function(e){
+  if(!lbDragging||e.touches.length!==1)return;
+  e.preventDefault();
+  lbPanX=lbPanStart.x+(e.touches[0].clientX-lbStart.x);
+  lbPanY=lbPanStart.y+(e.touches[0].clientY-lbStart.y);
+  applyLbTransform(true);
+},{passive:false});
+
+lbImg.addEventListener('touchend',function(){
+  lbDragging=false;
+  lbImg.classList.remove('dragging');
+});
+
+// Zoom buttons
+document.getElementById('lb-zoomin').addEventListener('click',function(e){
+  e.stopPropagation();
+  lbScale=Math.min(6,lbScale+0.35);
+  applyLbTransform(false);
+});
+document.getElementById('lb-zoomout').addEventListener('click',function(e){
+  e.stopPropagation();
+  lbScale=Math.max(0.3,lbScale-0.35);
+  applyLbTransform(false);
+});
+document.getElementById('lb-reset').addEventListener('click',function(e){
+  e.stopPropagation();
+  lbScale=1;lbPanX=0;lbPanY=0;
+  applyLbTransform(false);
+});
+
+// Close lightbox on bg click
+lightbox.addEventListener('click',function(e){
+  if(e.target===lightbox||e.target.classList.contains('lb-close')){
+    closeLightbox();
+  }
+});
+
+var pages=[];
+
+// ── Build all pages ──
+function coverHTML(){
+  return '<div class="cover-page">'+
+    '<div class="cover-star"></div>'+
+    '<div class="cover-title">2026年十大杰出港生</div>'+
+    '<div class="cover-subtitle">李昌伦</div>'+
+    '<div class="cover-line"></div>'+
+    '<div class="cover-info">博士三年级 · 学术成就奖一等奖</div>'+
+    '<div class="cover-badge">大湾区 · 港生风采</div>'+
+    '</div>';
+}
+
+function pageHTML(d,i){
+  return '<div class="content-page">'+
+    '<div class="img-box" data-src="'+d.img+'">'+
+      '<img src="'+d.img+'" alt="" onload="this.style.opacity=1" style="opacity:0">'+
+      '<span class="zoom-hint">🔍 点击放大</span>'+
+    '</div>'+
+    '<div class="text-box"><p>'+d.txt+'</p></div>'+
+    '<div class="page-num">— '+(i+1)+' / '+N+' —</div>'+
+    '</div>';
+}
+
+for(var i=0;i<N;i++){
+  var el=document.createElement('div');
+  el.className='book-page';
+  el.setAttribute('data-i',i);
+  el.innerHTML=DATA[i].t==='cover'?coverHTML():pageHTML(DATA[i],i);
+  stage.appendChild(el);
+  pages.push(el);
+}
+
+// ── Init ──
+pages[0].classList.add('active');
+if(N>1)pages[1].classList.add('under');
+updateUI();
+
+function updateUI(){
+  indicator.textContent=(cur+1)+' / '+N;
+  btnPrev.disabled=cur===0;
+  btnNext.disabled=cur>=N-1;
+}
+
+function hideHint(){
+  hint.style.opacity='0';
+  setTimeout(function(){hint.style.display='none'},800);
+}
+
+// ── Flip forward (page rotates away left, revealing next page) ──
+function flipFwd(){
+  if(busy||cur>=N-1)return;
+  busy=true;hideHint();
+
+  var pgCur=pages[cur];
+  var pgNxt=pages[cur+1];
+
+  // Show next page underneath
+  pgNxt.classList.remove('flipped','active','over');
+  pgNxt.classList.add('under');
+  pgNxt.style.visibility='visible';
+
+  // Flip current page away
+  pgCur.classList.add('flipped');
+  flipShadow.classList.add('active');
+
+  setTimeout(function(){
+    pgCur.classList.remove('flipped','active');
+    pgCur.style.visibility='hidden';
+    pgNxt.classList.remove('under');
+    pgNxt.classList.add('active');
+    cur++;
+    // Pre-reveal next
+    if(cur+1<N){
+      pages[cur+1].style.visibility='visible';
+      pages[cur+1].classList.add('under');
+    }
+    flipShadow.classList.remove('active');
+    updateUI();
+    busy=false;
+  },460);
+}
+
+// ── Flip backward (page un-flips from left, covering current page) ──
+function flipBwd(){
+  if(busy||cur<=0)return;
+  busy=true;hideHint();
+
+  var pgCur=pages[cur];
+  var pgPrv=pages[cur-1];
+
+  // Show previous page ABOVE current
+  pgPrv.style.visibility='visible';
+  pgPrv.classList.remove('active','under');
+  pgPrv.classList.add('over');
+
+  // Set to flipped state instantly (no animation)
+  pgPrv.style.transition='none';
+  pgPrv.classList.add('flipped');
+  pgPrv.offsetHeight; // reflow
+
+  // Animate back (un-flip)
+  pgPrv.style.transition='';
+  pgPrv.classList.remove('flipped');
+  flipShadow.classList.add('active');
+
+  setTimeout(function(){
+    pgCur.classList.remove('active');
+    pgCur.style.visibility='hidden';
+    pgPrv.classList.remove('over','flipped');
+    pgPrv.classList.add('active');
+    cur--;
+    // Clean up pages after cur
+    for(var i=cur+1;i<N;i++){
+      pages[i].style.visibility=i===cur+1?'visible':'hidden';
+      pages[i].classList.remove('active','under','over','flipped');
+    }
+    if(cur+1<N)pages[cur+1].classList.add('under');
+    flipShadow.classList.remove('active');
+    updateUI();
+    busy=false;
+  },460);
+}
+
+// ── Swipe ──
+var sx=0,sy=0,st=0,swiping=false;
+stage.addEventListener('touchstart',function(e){
+  if(busy)return;
+  sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();swiping=true;
+},{passive:true});
+
+stage.addEventListener('touchend',function(e){
+  if(!swiping||busy){swiping=false;return}
+  swiping=false;
+  var dx=e.changedTouches[0].clientX-sx;
+  var dy=e.changedTouches[0].clientY-sy;
+  var dt=Date.now()-st;
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>35&&dt<700){
+    dx<0?flipFwd():flipBwd();
+  }
+});
+
+// ── Click ──
+stage.addEventListener('click',function(e){
+  if(busy)return;
+  // Image → lightbox
+  var box=e.target.closest('.img-box');
+  if(box){
+    var src=box.getAttribute('data-src');
+    if(src){openLightbox(src);return}
+  }
+  // Click zone: right → next, left → prev
+  var r=stage.getBoundingClientRect();
+  var x=e.clientX-r.left;
+  if(x>r.width*.55)flipFwd();
+  else if(x<r.width*.45)flipBwd();
+});
+
+// ── Lightbox close ──
+lightbox.addEventListener('click',function(e){
+  if(e.target===lightbox||e.target.classList.contains('lb-close')){
+    lightbox.classList.remove('on');
+    setTimeout(function(){lbImg.src=''},300);
+  }
+});
+
+// ── Keyboard ──
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')flipFwd();
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')flipBwd();
+  if(e.key==='Escape'){closeLightbox()}
+});
+
+// ── Buttons ──
+btnNext.addEventListener('click',function(e){e.stopPropagation();flipFwd()});
+btnPrev.addEventListener('click',function(e){e.stopPropagation();flipBwd()});
+
+// ── Auto-hide hint ──
+setTimeout(function(){if(!busy)hideHint()},4000);
+
+// ── Preload images ──
+window.addEventListener('load',function(){
+  for(var i=2;i<N;i++){if(DATA[i].img){var im=new Image();im.src=DATA[i].img}}
+});
+
+})();
+</script>
+</body>
+</html>
